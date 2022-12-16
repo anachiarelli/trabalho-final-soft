@@ -1,10 +1,32 @@
 const ListaDeUsuarios = require("./Autenticacao/ListaDeUsuarios");
+const Usuario = require("./Autenticacao/Usuario");
 module.exports = class Aplicacao {
-    constructor(usuarios) {
+    /**
+     *
+     * @param {ListaDeUsuarios} usuarios
+     * @param {Usuario} [usuario]
+     */
+    constructor(usuarios, usuario) {
         if (!(usuarios instanceof ListaDeUsuarios)) {
             throw new Error("Aplicação depende de uma instância da classe ListaDeUsuarios");
         }
+
+        if (!(usuario instanceof Usuario) && usuario !== undefined) {
+            throw new Error("Usuário inválido");
+        }
+
+        if (usuario instanceof Usuario) {
+            const usuarioDaAplicacao = usuarios.pesquisar(usuario.email);
+            if (usuarioDaAplicacao !== usuario) {
+                throw new Error("Usuário inexistente");
+            }
+        }
         this.usuarios = usuarios;
+        this.usuarioCorrente = usuario;
+    }
+
+    getUsuarioCorrente() {
+        return this.usuarioCorrente;
     }
 
     /**
@@ -24,6 +46,7 @@ module.exports = class Aplicacao {
             return;
         }
 
+        this.usuarioCorrente = usuario;
         console.log("Login bem sucedido");
     }
 
