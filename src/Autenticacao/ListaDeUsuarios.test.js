@@ -1,5 +1,6 @@
 const ListaDeUsuarios = require("./ListaDeUsuarios");
 const Usuario = require("./Usuario");
+const ListaDeMovimentacoes = require("../Financeiro/ListaDeMovimentacoes");
 
 describe("ListaDeUsuarios", () => {
     describe("Construtor", () => {
@@ -32,7 +33,7 @@ describe("ListaDeUsuarios", () => {
         describe("Quando o usuário existe", () => {
             test("Deve retornar o usuário", () => {
                 const lista = new ListaDeUsuarios([
-                    new Usuario("email@email.com", "senha"),
+                    new Usuario("email@email.com", "senha", new ListaDeMovimentacoes()),
                 ]);
                 const usuario = lista.pesquisar("email@email.com");
                 expect(usuario).toBeInstanceOf(Usuario);

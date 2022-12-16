@@ -1,6 +1,8 @@
 const Aplicacao = require("./Aplicacao");
 const Usuario = require("./Autenticacao/Usuario");
 const ListaDeUsuarios = require("./Autenticacao/ListaDeUsuarios");
+const ListaDeMovimentacoes = require("./Financeiro/ListaDeMovimentacoes");
+const Movimentacao = require("./Financeiro//Movimentacao");
 
 describe("Aplicacao", () => {
     describe("Construtor", () => {
@@ -33,7 +35,7 @@ describe("Aplicacao", () => {
 
        describe("Quando o usuário é válido", () => {
            test("Deve definir o usuário corrente como o usuário passado por parâmetro", () => {
-               const usuarioInicial = new Usuario("email@email.com", "senha");
+               const usuarioInicial = new Usuario("email@email.com", "senha", new ListaDeMovimentacoes());
                const app = new Aplicacao(new ListaDeUsuarios([usuarioInicial]), usuarioInicial);
                const usuarioCorrente = app.getUsuarioCorrente();
                expect(usuarioCorrente).toBe(usuarioInicial);
@@ -42,7 +44,7 @@ describe("Aplicacao", () => {
 
        describe("Quando o usuário é válido, mas não está na lista de usuários", () => {
            test("Deve lançar uma exceção", () => {
-               expect(() => new Aplicacao(new ListaDeUsuarios(), new Usuario("email@email.com", "senha")))
+               expect(() => new Aplicacao(new ListaDeUsuarios(), new Usuario("email@email.com", "senha", new ListaDeMovimentacoes())))
                    .toThrow("Usuário inexistente");
            });
        });
@@ -63,7 +65,7 @@ describe("Aplicacao", () => {
             test("Deve mostrar um erro dizendo que a senha está incorreta", () => {
                 const lista = new ListaDeUsuarios();
                 Object.assign(lista, {
-                    pesquisar: () => new Usuario("usuario", "outra_senha")
+                    pesquisar: () => new Usuario("usuario", "outra_senha", new ListaDeMovimentacoes())
                 });
                 const app = new Aplicacao(lista);
                 const consoleSpy = jest.spyOn(console, "error");
@@ -76,7 +78,7 @@ describe("Aplicacao", () => {
             test("Deve mostrar uma mensagem de login bem sucedido", () => {
                 const lista = new ListaDeUsuarios();
                 Object.assign(lista, {
-                    pesquisar: () => new Usuario("usuario", "senha")
+                    pesquisar: () => new Usuario("usuario", "senha", new ListaDeMovimentacoes())
                 });
                 const app = new Aplicacao(lista);
                 const consoleSpy = jest.spyOn(console, "log");
@@ -86,7 +88,7 @@ describe("Aplicacao", () => {
 
             test("Deve alterar o usuario corrente", () => {
                 const lista = new ListaDeUsuarios();
-                const usuario = new Usuario("usuario", "senha");
+                const usuario = new Usuario("usuario", "senha", new ListaDeMovimentacoes());
                 Object.assign(lista, {
                     pesquisar: () => usuario
                 });
@@ -94,6 +96,49 @@ describe("Aplicacao", () => {
                 app.login("usuario", "senha");
                 const usuarioCorrente = app.getUsuarioCorrente();
                 expect(usuarioCorrente).toBe(usuario);
+            });
+        });
+    });
+
+    describe("Projeção", () => {
+        describe("Quando a lista de movimentações do usuário é vazia", () => {
+            test("Deve retornar um array onde todas os valores são 0", () => {
+                const movimentacoes = new ListaDeMovimentacoes();
+                const usuario = new Usuario("email@email.com", "senha", movimentacoes);
+                const lista = new ListaDeUsuarios();
+                Object.assign(lista, {
+                    pesquisar: () => usuario
+                });
+                const app = new Aplicacao(lista, usuario);
+                const projecao = app.projecao(3);
+                expect(Array.isArray(projecao)).toBe(true);
+                expect(projecao).toHaveLength(3);
+                expect(projecao[0]).toBe(0);
+                expect(projecao[1]).toBe(0);
+                expect(projecao[2]).toBe(0);
+            });
+        });
+        describe("Quando a lista de movimentações do usuário não é vazia", () => {
+            test("Deve retornar um array onde cada elemento é a soma do anterior mais a média", () => {
+                const movimentacoes = new ListaDeMovimentacoes();
+                Object.assign(movimentacoes, {
+                   getAll: () => [
+                       new Movimentacao(10000, new Date()),
+                       new Movimentacao(-5000, new Date())
+                   ]
+                });
+                const usuario = new Usuario("email@email.com", "senha", movimentacoes);
+                const lista = new ListaDeUsuarios();
+                Object.assign(lista, {
+                    pesquisar: () => usuario
+                });
+                const app = new Aplicacao(lista, usuario);
+                const projecao = app.projecao(3);
+                expect(Array.isArray(projecao)).toBe(true);
+                expect(projecao).toHaveLength(3);
+                expect(projecao[0]).toBe(5000);
+                expect(projecao[1]).toBe(10000);
+                expect(projecao[2]).toBe(15000);
             });
         });
     });
